@@ -4,10 +4,7 @@ $baseUrl = "-"
 $client_id = "-"
 $secret = "-"
 
-#endregion creds
-###########################################################################
-
-#region Authent 
+#region Auth
 ###########################################################################
 
 # Step 1. Create a client_id:secret pair
@@ -28,62 +25,65 @@ $headers.Add("Authorization", "Bearer $token")
 #endregion
 ###########################################################################
 
-####Create a User####
-# Construct the JSON body for the request
+# Import the CSV file
+$csvPath = "path\to\your\csvfile.csv"
+$users = Import-Csv -Path $csvPath
 
+# Iterate through each row in the CSV file and create users
+foreach ($user in $users) {
 
+    # Map CSV columns to variables
+    $PDS_var = $user.Name
+    $username_var = $user.Username
+    $enabled_var = if ($user.Enabled -eq $null) { $true } else { [bool]$user.Enabled }
+    $expires_var = $user.Expires
+    $email_var = $user.Email
+    $password_var = if ($user.Password -eq $null) { "Qwer123$" } else { $user.Password }
 
-$PDS_var = Read-Host -Prompt "Enter the public display name that you want to give your new user:"
-$password_var = "Qwer123$"
-$email_var = "test.email@email.com"
+    # Construct the JSON body for the request
+    $UserCreateBody = @{
+        "public_display_name"= "$PDS_var"
+        "username"= "$username_var"
+        "password"= "$password_var"
+        "email_address"= "$email_var"
+        "two_factor_required"= $true
+        "enabled"= $enabled_var
+        "password_reset_next_login"= $true
+        "perm_access_allowed"= "full_support"
+        "perm_share_other_team"= $true
+        "perm_invite_external_user"= $false
+        "perm_extended_availability_mode_allowed"= $false
+        "perm_session_idle_timeout"= -1
+        "perm_collaborate"= $false
+        "perm_collaborate_control"= $false
+        "perm_jump_client"= $true
+        "perm_local_jump"= $true
+        "perm_remote_jump"= $true
+        "perm_remote_vnc"= $true
+        "perm_remote_rdp"= $true
+        "perm_shell_jump"= $true
+        "default_jump_item_role_id"= 1
+        "private_jump_item_role_id"= 1
+        "inferior_jump_item_role_id"= 1
+        "unassigned_jump_item_role_id"= 1
+        "perm_web_jump"= $true
+        "perm_protocol_tunnel"= $true
+        "perm_vault"= $true
+    } | ConvertTo-Json
 
-$UserCreateBody = @{
-  "public_display_name"= "$PDS_var"
-  "username"= "$PDS_var"
-  "password"= "$password_var"
-  "email_address"= "$email_var"
-  "two_factor_required"= $true
-  "enabled"= $true
-  "password_reset_next_login"= $true
-  "perm_access_allowed"= "full_support"
-  "perm_share_other_team"= $true
-  "perm_invite_external_user"= $false
-  "perm_extended_availability_mode_allowed"= $false
-  "perm_session_idle_timeout"= -1
-  "perm_collaborate"= $false
-  "perm_collaborate_control"= $false
-  "perm_jump_client"= $true
-  "perm_local_jump"= $true
-  "perm_remote_jump"= $true
-  "perm_remote_vnc"= $true
-  "perm_remote_rdp"= $true
-  "perm_shell_jump"= $true
-  "default_jump_item_role_id"= 1
-  "private_jump_item_role_id"= 1
-  "inferior_jump_item_role_id"= 1
-  "unassigned_jump_item_role_id"= 1
-  "perm_web_jump"= $true
-  "perm_protocol_tunnel"= $true
-  "perm_vault"= $true
-} | ConvertTo-Json
+    # Construct the full URL for the user creation request
+    $UserCreateURL = "$baseUrl/user"
 
+    # Invoke the REST method to create a user
+    try {
+        $UserCreateResponse = Invoke-RestMethod -Uri $UserCreateURL -Method Post -Headers $headers -Body $UserCreateBody
 
-# Construct the full URL for the group policy request
-$UserCreateURL = "$baseUrl/user"
+        # Output the response
+        Write-Output "New user created with ID:"
+        $UserCreateResponse.id
 
-
-
-# Invoke the REST method to create a Group Policy
-try {
-    $UserCreateResponse = Invoke-RestMethod -Uri $UserCreateURL -Method Post -Headers $headers -Body $UserCreateBody
-
-
-    # Output the response
-    Write-Output "New user ID:"
-    $UserCreateResponse.id
-
-
-} catch {
-    # Catch and output any errors
-    Write-Error "Error occurred: $_"
+    } catch {
+        # Catch and output any errors
+        Write-Error "Error occurred: $_"
+    }
 }
