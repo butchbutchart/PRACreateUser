@@ -4,8 +4,9 @@ $baseUrl = "-"
 $client_id = "-"
 $secret = "-"
 
-#region Auth
-###########################################################################
+# Import the CSV file
+$csvPath = "PATH"
+$users = Import-Csv -Path $csvPath
 
 # Step 1. Create a client_id:secret pair
 $credPair = "$($client_id):$($secret)"
@@ -25,9 +26,7 @@ $headers.Add("Authorization", "Bearer $token")
 #endregion
 ###########################################################################
 
-# Import the CSV file
-$csvPath = "path\to\your\csvfile.csv"
-$users = Import-Csv -Path $csvPath
+
 
 # Iterate through each row in the CSV file and create users
 foreach ($user in $users) {
@@ -49,27 +48,11 @@ foreach ($user in $users) {
         "two_factor_required"= $true
         "enabled"= $enabled_var
         "password_reset_next_login"= $true
-        "perm_access_allowed"= "full_support"
-        "perm_share_other_team"= $true
-        "perm_invite_external_user"= $false
-        "perm_extended_availability_mode_allowed"= $false
-        "perm_session_idle_timeout"= -1
-        "perm_collaborate"= $false
-        "perm_collaborate_control"= $false
-        "perm_jump_client"= $true
-        "perm_local_jump"= $true
-        "perm_remote_jump"= $true
-        "perm_remote_vnc"= $true
-        "perm_remote_rdp"= $true
-        "perm_shell_jump"= $true
-        "default_jump_item_role_id"= 1
-        "private_jump_item_role_id"= 1
-        "inferior_jump_item_role_id"= 1
-        "unassigned_jump_item_role_id"= 1
-        "perm_web_jump"= $true
-        "perm_protocol_tunnel"= $true
-        "perm_vault"= $true
     } | ConvertTo-Json
+
+    # Print the JSON body
+    Write-Output "JSON Body for user ${PDS_var}:"
+    Write-Output $UserCreateBody
 
     # Construct the full URL for the user creation request
     $UserCreateURL = "$baseUrl/user"
